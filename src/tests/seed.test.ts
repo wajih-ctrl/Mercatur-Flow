@@ -23,6 +23,8 @@ describe("deterministic Mercatur seed", () => {
     const state = createInitialState();
     expect(state.customers.filter(c => c.id === "svalbard")).toHaveLength(1);
     expect(state.customers.find(c => c.id === "svalbard")?.staged).toBe(true);
+    expect(state.customers.find(c => c.id === "svalbard")?.createdFromSignature).toBe(true);
+    expect(state.customers.find(c => c.id === "lysefjord")).toMatchObject({ status: "Active customer", statusDetail: "Renewal due" });
     expect(state.tasks.filter(t => t.staged).map(t => t.id).sort()).toEqual(["disc-10", "disc-15"]);
   });
   it("preserves the deliberate demo moments and role assignments", () => {

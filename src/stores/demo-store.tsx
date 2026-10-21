@@ -87,8 +87,9 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     const action = meeting?.actionItems.find((item) => item.id === actionId);
     if (!meeting || !action || action.convertedTaskId) return s;
     const taskId = `meeting-task-${meetingId}-${actionId}`;
+    const tasks = s.tasks.map((task) => action.relatedTaskId && task.id === action.relatedTaskId ? { ...task, relatedTo: taskId } : task);
     return { ...s,
-      tasks: [...s.tasks, { id: taskId, title: action.text, customerId: meeting.customerId, status: "pending", origin: "AI", category: "Meeting action", owner: action.owner, sources: [{ type: "meeting", id: meeting.id, label: meeting.title, excerpt: action.text }], createdAt: meeting.date, relatedTo: action.relatedTaskId }],
+      tasks: [...tasks, { id: taskId, title: action.text, customerId: meeting.customerId, status: "pending", origin: "AI", category: "Meeting action", owner: action.owner, sources: [{ type: "meeting", id: meeting.id, label: meeting.title, excerpt: action.text }], createdAt: meeting.date, relatedTo: action.relatedTaskId }],
       meetings: s.meetings.map((item) => item.id === meetingId ? { ...item, actionItems: item.actionItems.map((entry) => entry.id === actionId ? { ...entry, convertedTaskId: taskId } : entry) } : item),
     };
   }), []);

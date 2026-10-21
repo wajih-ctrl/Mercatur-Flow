@@ -33,7 +33,7 @@ export default function CustomersPage() {
       <button className={`filter-chip ${quiet ? "active" : ""}`} onClick={() => setQuiet(true)}>Going quiet</button>
     </div>
     {active.length ? <div className="customer-grid">{active.map((customer) => <Link className="customer-card surface" href={`/customers/${customer.id}`} key={customer.id}>
-      <div className="customer-head"><span className="company-logo" style={{width:40,height:40,borderRadius:11,fontSize:12}}>{initials(customer.company)}</span>{customer.quiet ? <Badge tone="warning"><AlertCircle size={11}/>Going quiet</Badge> : <Badge tone="accent">{customer.status}</Badge>}</div>
+      <div className="customer-head"><span className="company-logo" style={{width:40,height:40,borderRadius:11,fontSize:12}}>{initials(customer.company)}</span>{customer.createdFromSignature ? <Badge tone="success">Auto-created</Badge> : customer.quiet ? <Badge tone="warning"><AlertCircle size={11}/>Going quiet</Badge> : <Badge tone="accent">{customer.status}</Badge>}</div>
       <h3>{customer.company}</h3><p>{customer.contact} · {customer.position}</p>
       <div className="customer-foot"><span>Last contact {formatDate(customer.lastContact,true)}</span><ArrowRight size={14}/></div>
     </Link>)}</div> : <div className="surface"><EmptyState icon={<UsersRound/>} title="No customers found" description="Clear the filter or search for another name." action={<Button variant="secondary" onClick={() => {setQuery("");setQuiet(false)}}>Clear filters</Button>}/></div>}

@@ -11,6 +11,7 @@ export interface Customer {
   lastContact: string;
   quiet?: boolean;
   staged?: boolean;
+  createdFromSignature?: boolean;
   summary: string;
 }
 
