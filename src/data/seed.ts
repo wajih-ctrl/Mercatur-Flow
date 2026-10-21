@@ -1,4 +1,4 @@
-import type { CalendarEvent, Customer, DemoState, Email, Meeting, Task } from "@/lib/types";
+import type { CalendarEvent, Customer, DemoState, Email, Meeting, Task, WorkspaceUser } from "@/lib/types";
 
 export const customers: Customer[] = [
   { id: "nordlys", company: "Nordlys Bygg AS", contact: "Kari Solberg", position: "Prosjektleder", status: "Active deal", statusDetail: "Proposal pending", lastContact: "2026-10-19", summary: "Positive buying signal. A revised proposal is due before the board review on Monday." },
@@ -67,10 +67,16 @@ const discovered: Task[] = [
 ];
 
 const manualTasks: Task[] = [
-  { id: "manual-1", title: "GDPR doc for Nordic Pulse", customerId: "nordic", due: "2026-10-23", status: "approved", origin: "Manual", category: "Manual", owner: "Olav", sources: [], createdAt: "2026-10-16" },
-  { id: "manual-2", title: "Prepare Q4 pipeline review", due: "2026-10-30", status: "approved", origin: "Manual", category: "Internal", owner: "Olav", sources: [], createdAt: "2026-10-15" },
-  { id: "manual-3", title: "Invoice check: Oslo Design", customerId: "oslo", due: "2026-10-22", status: "approved", origin: "Manual", category: "Manual", owner: "Maja Nilsen", sources: [], createdAt: "2026-10-20" },
-  { id: "manual-4", title: "Call Telemark about training", customerId: "telemark", due: "2026-10-24", status: "approved", origin: "Manual", category: "Manual", owner: "Maja Nilsen", sources: [], createdAt: "2026-10-18" },
+  { id: "manual-1", title: "GDPR doc for Nordic Pulse", customerId: "nordic", due: "2026-10-23", time: "09:00", status: "approved", origin: "Manual", category: "Manual", owner: "Olav", sources: [], createdAt: "2026-10-16" },
+  { id: "manual-2", title: "Prepare Q4 pipeline review", due: "2026-10-30", time: "09:00", status: "approved", origin: "Manual", category: "Internal", owner: "Olav", sources: [], createdAt: "2026-10-15" },
+  { id: "manual-3", title: "Invoice check: Oslo Design", customerId: "oslo", due: "2026-10-22", time: "10:00", status: "approved", origin: "Manual", category: "Manual", owner: "Maja Nilsen", sources: [], createdAt: "2026-10-20" },
+  { id: "manual-4", title: "Call Telemark about training", customerId: "telemark", due: "2026-10-24", time: "15:00", status: "approved", origin: "Manual", category: "Manual", owner: "Maja Nilsen", sources: [], createdAt: "2026-10-18" },
+];
+
+export const users: WorkspaceUser[] = [
+  { id: "user-olav", name: "Olav", email: "olav@mercatur.demo", role: "Owner / Account manager", scope: "All customers", status: "Active" },
+  { id: "user-maja", name: "Maja Nilsen", email: "maja@mercatur.demo", role: "Sales team member", scope: "Assigned accounts", status: "Active" },
+  { id: "user-admin", name: "Demo Admin", email: "admin@mercatur.demo", role: "Administrator", scope: "Workspace settings", status: "Active" },
 ];
 
 export const events: CalendarEvent[] = [
@@ -83,12 +89,15 @@ export const events: CalendarEvent[] = [
 ];
 
 export function createInitialState(): DemoState {
+  const seededTaskEvents: CalendarEvent[] = manualTasks.filter((task) => task.due).map((task) => ({ id: `task-event-${task.id}`, title: task.title, date: task.due!, time: task.time || "09:00", duration: 30, type: "task", customerId: task.customerId, taskId: task.id, owner: task.owner }));
   return {
     tasks: [...manualTasks.map((task) => ({ ...task })), ...discovered.map((task) => ({ ...task, sources: task.sources.map((source) => ({ ...source })) }))],
     customers: customers.map((customer) => ({ ...customer })),
-    events: events.map((event) => ({ ...event })),
+    events: [...events.map((event) => ({ ...event })), ...seededTaskEvents],
     meetings: meetings.map((meeting) => ({ ...meeting, actionItems: meeting.actionItems.map((item) => ({ ...item })) })),
     role: "Olav",
+    language: "en",
+    users: users.map((user) => ({ ...user })),
     scanComplete: false,
     connections: { Gmail: true, Outlook: false, Calendar: true, Meetings: true },
     preferences: { taskCalendarEntries: true, attentionSummaries: true },

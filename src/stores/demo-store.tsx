@@ -2,9 +2,10 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { createInitialState } from "@/data/seed";
-import type { DemoState, Role, Task } from "@/lib/types";
+import type { DemoState, Language, Role, Task, WorkspaceUser } from "@/lib/types";
 
-type NewTask = Pick<Task, "title" | "due" | "customerId">;
+type NewTask = Pick<Task, "title" | "due" | "time" | "customerId">;
+type NewUser = Pick<WorkspaceUser, "name" | "email" | "role" | "scope">;
 interface DemoContextValue extends DemoState {
   hydrated: boolean;
   approveTask(id: string): void;
@@ -18,8 +19,11 @@ interface DemoContextValue extends DemoState {
   rescheduleNordlys(): void;
   acceptEvent(id: string): void;
   acceptSuggestedSlot(id: string): void;
+  cancelEvent(id: string): void;
   convertAction(meetingId: string, actionId: string): void;
   setRole(role: Role): void;
+  setLanguage(language: Language): void;
+  addUser(user: NewUser): void;
   setConnection(name: string, enabled: boolean): void;
   setPreference(name: keyof DemoState["preferences"], enabled: boolean): void;
   resetDemo(): void;
@@ -50,16 +54,30 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state, hydrated]);
 
-  const updateTask = useCallback((id: string, patch: Partial<Task>) => setState((s) => ({ ...s, tasks: s.tasks.map((task) => task.id === id ? { ...task, ...patch } : task) })), []);
+  const updateTask = useCallback((id: string, patch: Partial<Task>) => setState((s) => {
+    const current = s.tasks.find((task) => task.id === id);
+    if (!current) return s;
+    const nextTask = { ...current, ...patch };
+    const events = s.events.map((event) => event.taskId === id ? { ...event, title: nextTask.title, date: nextTask.due || event.date, time: nextTask.time || event.time } : event);
+    return { ...s, tasks: s.tasks.map((task) => task.id === id ? nextTask : task), events };
+  }), []);
   const approveTask = useCallback((id: string) => setState((s) => {
     const task = s.tasks.find((item) => item.id === id);
     if (!task) return s;
-    const events = task.due && !s.events.some((event) => event.taskId === id) ? [...s.events, { id: `task-event-${id}`, title: task.title, date: task.due, time: "09:00", duration: 30, type: "task" as const, customerId: task.customerId, taskId: id }] : s.events;
-    return { ...s, tasks: s.tasks.map((item) => item.id === id ? { ...item, status: "approved" as const } : item), events };
+    const scheduledTime = task.time || "09:00";
+    const events = task.due && !s.events.some((event) => event.taskId === id) ? [...s.events, { id: `task-event-${id}`, title: task.title, date: task.due, time: scheduledTime, duration: 30, type: "task" as const, customerId: task.customerId, taskId: id, owner: task.owner }] : s.events;
+    return { ...s, tasks: s.tasks.map((item) => item.id === id ? { ...item, time: item.due ? scheduledTime : item.time, status: "approved" as const } : item), events };
   }), []);
   const dismissTask = useCallback((id: string) => updateTask(id, { status: "dismissed" }), [updateTask]);
   const completeTask = useCallback((id: string) => updateTask(id, { status: "done" }), [updateTask]);
-  const addTask = useCallback((task: NewTask) => setState((s) => ({ ...s, tasks: [...s.tasks, { ...task, id: `manual-${Date.now()}`, status: "approved", origin: "Manual", category: "Manual", owner: s.role === "Sales" ? "Maja Nilsen" : "Olav", sources: [], createdAt: "2026-10-21" }] })), []);
+  const addTask = useCallback((task: NewTask) => setState((s) => {
+    const id = `manual-${Date.now()}`;
+    const owner = s.role === "Sales" ? "Maja Nilsen" : "Olav";
+    const scheduledTime = task.due ? task.time || "09:00" : undefined;
+    const created: Task = { ...task, id, time: scheduledTime, status: "approved", origin: "Manual", category: "Manual", owner, sources: [], createdAt: "2026-10-21" };
+    const events = task.due ? [...s.events, { id: `task-event-${id}`, title: task.title, date: task.due, time: scheduledTime!, duration: 30, type: "task" as const, customerId: task.customerId, taskId: id, owner }] : s.events;
+    return { ...s, tasks: [...s.tasks, created], events };
+  }), []);
   const mergeTask = useCallback((id: string) => setState((s) => {
     const discovery = s.tasks.find((task) => task.id === id);
     if (!discovery?.duplicateOf) return s;
@@ -79,9 +97,10 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       meetings: s.meetings.map((meeting) => meeting.id === "meeting-a" ? { ...meeting, actionItems: meeting.actionItems.map((action) => action.id === "a1" ? { ...action, convertedTaskId: meetingTaskId } : action) } : meeting),
     };
   }), []);
-  const rescheduleNordlys = useCallback(() => setState((s) => ({ ...s, events: s.events.map((event) => event.id === "event-nordlys" ? { ...event, date: "2026-10-23", time: "10:00" } : event), tasks: s.tasks.map((task) => task.id === "disc-15" ? { ...task, status: "approved" as const } : task) })), []);
+  const rescheduleNordlys = useCallback(() => setState((s) => ({ ...s, events: s.events.map((event) => event.id === "event-nordlys" ? { ...event, date: "2026-10-23", time: "10:00" } : event), tasks: s.tasks.map((task) => task.id === "disc-15" ? { ...task, time: "10:00", status: "approved" as const } : task) })), []);
   const acceptEvent = useCallback((id: string) => setState((s) => ({ ...s, events: s.events.map((event) => event.id === id ? { ...event, type: "confirmed" as const } : event) })), []);
   const acceptSuggestedSlot = useCallback((id: string) => setState((s) => ({ ...s, events: s.events.map((event) => event.id === id ? { ...event, type: "task" as const } : event) })), []);
+  const cancelEvent = useCallback((id: string) => setState((s) => ({ ...s, events: s.events.filter((event) => event.id !== id) })), []);
   const convertAction = useCallback((meetingId: string, actionId: string) => setState((s) => {
     const meeting = s.meetings.find((item) => item.id === meetingId);
     const action = meeting?.actionItems.find((item) => item.id === actionId);
@@ -94,11 +113,13 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     };
   }), []);
   const setRole = useCallback((role: Role) => setState((s) => ({ ...s, role })), []);
+  const setLanguage = useCallback((language: Language) => setState((s) => ({ ...s, language })), []);
+  const addUser = useCallback((user: NewUser) => setState((s) => ({ ...s, users: [...s.users, { ...user, id: `user-${Date.now()}`, status: "Active" }] })), []);
   const setConnection = useCallback((name: string, enabled: boolean) => setState((s) => ({ ...s, connections: { ...s.connections, [name]: enabled } })), []);
   const setPreference = useCallback((name: keyof DemoState["preferences"], enabled: boolean) => setState((s) => ({ ...s, preferences: { ...s.preferences, [name]: enabled } })), []);
   const resetDemo = useCallback(() => { localStorage.removeItem(STORAGE_KEY); setState(createInitialState()); }, []);
 
-  const value = useMemo(() => ({ ...state, hydrated, approveTask, dismissTask, updateTask, completeTask, addTask, mergeTask, linkRelated, runScan, rescheduleNordlys, acceptEvent, acceptSuggestedSlot, convertAction, setRole, setConnection, setPreference, resetDemo }), [state, hydrated, approveTask, dismissTask, updateTask, completeTask, addTask, mergeTask, linkRelated, runScan, rescheduleNordlys, acceptEvent, acceptSuggestedSlot, convertAction, setRole, setConnection, setPreference, resetDemo]);
+  const value = useMemo(() => ({ ...state, hydrated, approveTask, dismissTask, updateTask, completeTask, addTask, mergeTask, linkRelated, runScan, rescheduleNordlys, acceptEvent, acceptSuggestedSlot, cancelEvent, convertAction, setRole, setLanguage, addUser, setConnection, setPreference, resetDemo }), [state, hydrated, approveTask, dismissTask, updateTask, completeTask, addTask, mergeTask, linkRelated, runScan, rescheduleNordlys, acceptEvent, acceptSuggestedSlot, cancelEvent, convertAction, setRole, setLanguage, addUser, setConnection, setPreference, resetDemo]);
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;
 }
 

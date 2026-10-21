@@ -7,7 +7,10 @@ describe("deterministic Mercatur seed", () => {
     expect(seedStats).toEqual({ customers: 12, emails: 15, meetings: 3, manualTasks: 4 });
     expect(customers).toHaveLength(12); expect(emails).toHaveLength(15); expect(meetings).toHaveLength(3);
     expect(DEMO_TODAY).toBe("2026-10-21");
-    expect(createInitialState().preferences).toEqual({ taskCalendarEntries: true, attentionSummaries: true });
+    const state = createInitialState();
+    expect(state.preferences).toEqual({ taskCalendarEntries: true, attentionSummaries: true });
+    expect(state.language).toBe("en");
+    expect(state.users).toHaveLength(3);
   });
   it("preserves required discovery scenarios", () => {
     const state = createInitialState();
@@ -42,6 +45,13 @@ describe("deterministic Mercatur seed", () => {
     for (const task of state.tasks.filter(t => t.origin === "AI")) {
       expect(task.sources.length).toBeGreaterThan(0);
       for (const source of task.sources) expect(source.type === "email" ? emailIds.has(source.id) : meetingIds.has(source.id)).toBe(true);
+    }
+  });
+  it("places every scheduled approved task on the calendar at its selected time", () => {
+    const state = createInitialState();
+    for (const task of state.tasks.filter(task => task.status === "approved" && task.due)) {
+      expect(task.time).toMatch(/^\d{2}:\d{2}$/);
+      expect(state.events.find(event => event.taskId === task.id)).toMatchObject({ date: task.due, time: task.time, type: "task" });
     }
   });
 });

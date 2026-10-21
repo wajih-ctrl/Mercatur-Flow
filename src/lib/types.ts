@@ -1,4 +1,5 @@
 export type Role = "Olav" | "Sales" | "Admin";
+export type Language = "en" | "no";
 export type CustomerStatus = "Active deal" | "Negotiation" | "Active customer" | "Warm lead" | "New lead" | "Renewal due" | "Going quiet";
 
 export interface Customer {
@@ -41,6 +42,7 @@ export interface Task {
   title: string;
   customerId?: string;
   due?: string;
+  time?: string;
   status: "pending" | "approved" | "done" | "dismissed";
   origin: "AI" | "Manual";
   confidence?: number;
@@ -80,6 +82,16 @@ export interface CalendarEvent {
   type: "confirmed" | "task" | "proposed" | "suggested";
   customerId?: string;
   taskId?: string;
+  owner?: string;
+}
+
+export interface WorkspaceUser {
+  id: string;
+  name: string;
+  email: string;
+  role: "Owner / Account manager" | "Sales team member" | "Administrator";
+  scope: string;
+  status: "Active";
 }
 
 export interface DemoState {
@@ -88,6 +100,8 @@ export interface DemoState {
   events: CalendarEvent[];
   meetings: Meeting[];
   role: Role;
+  language: Language;
+  users: WorkspaceUser[];
   scanComplete: boolean;
   connections: Record<string, boolean>;
   preferences: {

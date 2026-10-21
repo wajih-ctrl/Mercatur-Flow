@@ -17,11 +17,12 @@ export function DiscoveryWorkspace({ initialId, initialFilter = "all" }: { initi
   const [dismissOpen, setDismissOpen] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftDue, setDraftDue] = useState("");
+  const [draftTime, setDraftTime] = useState("09:00");
   const pending = useMemo(() => demo.tasks.filter((task) => task.status === "pending" && !task.staged && task.title.toLowerCase().includes(query.toLowerCase()) && (filter === "all" || filter === "overdue" && (isOverdue(task.due) || task.staleDays) || filter === "duplicates" && task.duplicateOf)), [demo.tasks, query, filter]);
   const selected = pending.find((task) => task.id === selectedId) || pending[0];
   const customer = demo.customers.find((item) => item.id === selected?.customerId);
   const duplicate = demo.tasks.find((task) => task.id === selected?.duplicateOf);
-  const openEdit = useCallback(() => { if (!selected) return; setDraftTitle(selected.title); setDraftDue(selected.due || ""); setEditOpen(true); }, [selected]);
+  const openEdit = useCallback(() => { if (!selected) return; setDraftTitle(selected.title); setDraftDue(selected.due || ""); setDraftTime(selected.time || "09:00"); setEditOpen(true); }, [selected]);
   const primarySource = selected?.sources[0];
   const language = primarySource?.type === "email" ? emails.find((email) => email.id === primarySource.id)?.language : demo.meetings.find((meeting) => meeting.id === primarySource?.id)?.language;
 
@@ -53,7 +54,7 @@ export function DiscoveryWorkspace({ initialId, initialFilter = "all" }: { initi
       {selected && <aside className="evidence-panel surface">
         <div className="eyebrow">Why this task?</div><h2>{selected.title}</h2>
         {customer && <Link className="customer-link" href={`/customers/${customer.id}`}>{customer.company} <ArrowUpRight size={13}/></Link>}
-        <div className="discovery-meta" style={{marginTop:10}}><Badge tone={isOverdue(selected.due) || selected.staleDays ? "danger" : "neutral"}><CalendarDays size={12}/>{selected.staleDays ? `${selected.staleDays} days outstanding · no sourced date` : formatDate(selected.due)}</Badge><Badge>{selected.category}</Badge>{language && <Badge>{language === "Norwegian" ? "NO · Norwegian" : "EN · English"}</Badge>}</div>
+        <div className="discovery-meta" style={{marginTop:10}}><Badge tone={isOverdue(selected.due) || selected.staleDays ? "danger" : "neutral"}><CalendarDays size={12}/>{selected.staleDays ? `${selected.staleDays} days outstanding · no sourced date` : `${formatDate(selected.due)}${selected.due ? ` · ${selected.time || "09:00"}` : ""}`}</Badge><Badge>{selected.category}</Badge>{language && <Badge>{language === "Norwegian" ? "NO · Norwegian" : "EN · English"}</Badge>}</div>
         <div className="evidence-box"><blockquote>“{selected.sources[0]?.excerpt}”</blockquote><small>Exact source text · preserved from the original</small></div>
         <div className="section-title"><div><h2 style={{fontSize:14}}>Source evidence</h2><p>{selected.sources.length} linked {selected.sources.length === 1 ? "source" : "sources"}</p></div></div>
         <div className="source-stack">{selected.sources.map((source) => <Link className="source-card" href={`/${source.type === "email" ? "emails" : "meetings"}/${source.id}`} key={`${source.type}-${source.id}`}><span className="source-icon">{source.type === "email" ? <Mail size={14}/> : <CalendarDays size={14}/>}</span><div><strong>{source.label}</strong><span>Open original source <ArrowUpRight size={10}/></span></div></Link>)}</div>
@@ -66,8 +67,8 @@ export function DiscoveryWorkspace({ initialId, initialFilter = "all" }: { initi
       </aside>}
     </div>
     <Modal open={editOpen} onOpenChange={setEditOpen} title="Edit task suggestion" description="Refine the working task. The original source evidence remains unchanged.">
-      <div className="form-grid"><div className="field"><label htmlFor="edit-title">Task title</label><input id="edit-title" value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)}/></div><div className="field"><label htmlFor="edit-due">Due date</label><input id="edit-due" type="date" value={draftDue} onChange={(e) => setDraftDue(e.target.value)}/></div></div>
-      <div className="dialog-actions"><Button variant="secondary" onClick={() => setEditOpen(false)}>Cancel</Button><Button disabled={!draftTitle.trim()} onClick={() => { demo.updateTask(selected!.id, { title: draftTitle.trim(), due: draftDue || undefined }); setEditOpen(false); }}>Save changes</Button></div>
+      <div className="form-grid"><div className="field"><label htmlFor="edit-title">Task title</label><input id="edit-title" value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)}/></div><div className="form-row"><div className="field"><label htmlFor="edit-due">Due date</label><input id="edit-due" type="date" value={draftDue} onChange={(e) => setDraftDue(e.target.value)}/></div><div className="field"><label htmlFor="edit-time">Scheduled time</label><input id="edit-time" type="time" value={draftTime} onChange={(e) => setDraftTime(e.target.value)} disabled={!draftDue}/></div></div></div>
+      <div className="dialog-actions"><Button variant="secondary" onClick={() => setEditOpen(false)}>Cancel</Button><Button disabled={!draftTitle.trim()} onClick={() => { demo.updateTask(selected!.id, { title: draftTitle.trim(), due: draftDue || undefined, time: draftDue ? draftTime : undefined }); setEditOpen(false); }}>Save changes</Button></div>
     </Modal>
     <Modal open={dismissOpen} onOpenChange={setDismissOpen} title="Dismiss this discovery?" description="It will leave the active review queue. The original source remains available in Emails or Meetings.">
       <div className="dialog-actions"><Button variant="secondary" onClick={() => setDismissOpen(false)}>Cancel</Button><Button variant="danger" onClick={() => { demo.dismissTask(selected!.id); setDismissOpen(false); }}>Dismiss discovery</Button></div>
