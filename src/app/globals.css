@@ -176,6 +176,11 @@ main{padding-top:38px}
 .company-logo{background:linear-gradient(145deg,#36574e,#1e3831);box-shadow:0 8px 18px rgba(29,57,48,.13)}
 .profile-hero,.summary-card,.timeline,.document,.calendar-shell,.privacy,.settings-panel,.settings-nav{border-radius:18px}
 .summary-card{background:linear-gradient(145deg,#203a33,#294d42);box-shadow:0 18px 42px rgba(30,63,53,.14)}
+.summary-card .source-card{border-color:rgba(255,255,255,.16)!important;background:rgba(255,255,255,.075);color:#f7fbf9;box-shadow:none}
+.summary-card .source-card:hover{border-color:rgba(255,255,255,.26)!important;background:rgba(255,255,255,.12);box-shadow:none}
+.summary-card .source-card>svg{color:#9ed0be}
+.summary-card .source-card strong{color:#f7fbf9}
+.summary-card .source-card span{color:#c8d5d0!important}
 .timeline-dot{box-shadow:0 3px 10px rgba(27,57,47,.06)}
 .inbox-item,.settings-nav button,.segmented button{transition:.15s ease}
 .inbox-item:hover{padding-left:19px}
