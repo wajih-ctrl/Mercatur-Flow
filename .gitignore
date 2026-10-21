@@ -1,0 +1,26 @@
+# dependencies
+/node_modules
+
+# Next.js build output
+/.next
+/out
+
+# production and test output
+/build
+/coverage
+
+# local environment files
+.env
+.env.*
+!.env.example
+
+# Vercel project metadata
+.vercel
+
+# logs and operating-system files
+*.log
+.DS_Store
+Thumbs.db
+
+# local development artifacts
+mercatur-premium-dashboard.png
